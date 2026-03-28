@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXTRAXCON | Quantum Mining & AI NFT Ecosystem</title>
+    <script src="https://cdn.jsdelivr.net"></script>
+    <style>
+        :root { --neon: #00ff88; --bg: #010204; --panel: #0d1117; --accent: #00d2ff; --gold: #f1c40f; --red: #ff3e3e; --text: #e6edf3; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 360px; background: var(--panel); border-right: 2px solid var(--neon); padding: 20px; overflow-y: auto; box-shadow: 10px 0 40px rgba(0,255,136,0.15); z-index: 10; }
+        .logo-box { text-align: center; margin-bottom: 25px; border: 3px double var(--neon); padding: 10px; background: rgba(0,255,136,0.05); }
+        .logo { font-size: 28px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 4px; margin: 0; }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 10px; color: #8b949e; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
+        select, input { width: 100%; background: #000; border: 1px solid #30363d; color: var(--neon); padding: 12px; border-radius: 6px; box-sizing: border-box; font-family: monospace; }
+        
+        /* Botones */
+        .btn { width: 100%; padding: 15px; border-radius: 6px; border: none; font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase; margin-top: 8px; font-size: 12px; }
+        .btn-mine { background: var(--neon); color: #000; }
+        .btn-withdraw { background: var(--gold); color: #000; }
+        .btn-nft { background: var(--accent); color: #fff; }
+        .btn-github { background: #238636; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* Main */
+        .main { flex: 1; padding: 20px; overflow-y: auto; background: radial-gradient(circle at center, #0a111a 0%, #010204 100%); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: rgba(13, 17, 23, 0.95); padding: 20px; border-radius: 10px; border: 1px solid #30363d; position: relative; }
+        .val { font-size: 48px; font-weight: 900; color: #fff; font-family: monospace; margin: 10px 0; }
+
+        /* Ticker & NFT */
+        .nft-viewport { height: 200px; background: #000; border: 1px dashed var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 10px; }
+        .ticker-box { margin-top: 20px; background: #000; padding: 10px; border-radius: 6px; border: 1px solid #222; height: 120px; overflow: hidden; }
+        .ticker-row { display: flex; justify-content: space-between; font-size: 10px; padding: 5px 0; border-bottom: 1px solid #111; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-box"><h1 class="logo">EXTRAXCON</h1></div>
+
+        <div class="input-group">
+            <label>Dirección Wallet Destino</label>
+            <input type="text" id="wallet-addr" placeholder="Wallet pública...">
+        </div>
+
+        <div class="input-group">
+            <label>Criptomoneda</label>
+            <select id="coin-select">
+                <option value="USDT">USDT (TRC-20)</option>
+                <option value="BTC">Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="SOL">Solana (SOL)</option>
+            </select>
+        </div>
+
+        <button class="btn btn-mine" onclick="toggleMiner()" id="btn-mine">ACTIVAR MINERÍA 24/7</button>
+
+        <!-- GitHub Link -->
+        <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+            <label>CÓDIGO OPEN SOURCE</label>
+            <a href="https://github.com" target="_blank" style="text-decoration:none;">
+                <button class="btn btn-github">IR A CREAR REPOSITORIO</button>
+            </a>
+        </div>
+
+        <div style="background: rgba(0, 210, 255, 0.05); padding: 12px; border: 1px solid var(--accent); margin-top: 15px;">
+            <label>REFERIDOS (GANA 15%)</label>
+            <div style="font-size:10px; color:var(--neon); cursor:pointer;">https://extraxcon.com</div>
+            <div style="font-size:9px; margin-top:5px;">Activos: <span id="ref-count">0</span></div>
+        </div>
+
+        <div class="input-group" style="margin-top:20px;">
+            <label>Monto a Retirar</label>
+            <input type="number" id="with-amt" placeholder="Mínimo 10.00">
+            <button class="btn btn-withdraw" onclick="withdraw()">RETIRAR GANANCIAS</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="grid">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:10px; color:var(--neon);">BALANCE LIVE</span>
+                    <span id="status-txt" style="color:var(--red); font-size:10px;">OFFLINE</span>
+                </div>
+                <div class="val" id="balance">0.000000</div>
+                <canvas id="liveChart" height="100"></canvas>
+            </div>
+
+            <div class="card">
+                <label>IA NFT GENERATOR</label>
+                <input type="text" id="nft-prompt" placeholder="Ej: Abstract Neon Tiger...">
+                <button class="btn btn-nft" onclick="generateNFT()">MINAR NFT IA</button>
+                <div class="nft-viewport" id="nft-box"><span style="color:#222">IA STANDBY</span></div>
+            </div>
+        </div>
+
+        <div class="ticker-box">
+            <label>FEED GLOBAL DE EXTRACCIONES</label>
+            <div id="global-ticker"></div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+            <label>EXPLORADOR DE BLOCKCHAIN (MIS TRANSACCIONES)</label>
+            <div id="tx-log" style="font-size:10px; font-family:monospace; color:#444; margin-top:10px;">Esperando red...</div>
+        </div>
+    </div>
+
+    <script>
+        let balance = 0;
+        let isMining = false;
+        const ratePerSec = 1000 / 60;
+
+        function toggleMiner() {
+            if(!document.getElementById('wallet-addr').value) return alert("Ingresa Wallet.");
+            isMining = !isMining;
+            const btn = document.getElementById('btn-mine');
+            const status = document.getElementById('status-txt');
+            
+            if(isMining) {
+                btn.innerText = "PAUSAR NODO";
+                btn.style.background = "var(--red)";
+                status.innerText = "ONLINE - 1,000 USDT/MIN";
+                status.style.color = "var(--neon)";
+                loop();
+                tickerLoop();
+                document.getElementById('ref-count').innerText = "14";
+            } else {
+                btn.innerText = "INICIAR MINERÍA 24/7";
+                btn.style.background = "var(--neon)";
+                status.innerText = "OFFLINE";
+                status.style.color = "var(--red)";
+            }
+        }
+
+        function loop() {
+            if(!isMining) return;
+            balance += ratePerSec;
+            document.getElementById('balance').innerText = balance.toLocaleString(undefined, {minimumFractionDigits: 6});
+            setTimeout(loop, 1000);
+        }
+
+        function withdraw() {
+            const amt = parseFloat(document.getElementById('with-amt').value);
+            if(!amt || amt > balance) return alert("Saldo insuficiente.");
+            const hash = "0x" + Math.random().toString(16).slice(2, 15).toUpperCase();
+            const log = document.getElementById('tx-log');
+            if(log.innerHTML.includes('Esperando')) log.innerHTML = '';
+            log.innerHTML = `<div>HASH: ${hash} | MONTO: ${amt} | STATUS: <span style="color:var(--neon)">ENVIADO ✓</span></div>` + log.innerHTML;
+            balance -= amt;
+            document.getElementById('balance').innerText = balance.toFixed(6);
+            alert("Retiro procesado a la red.");
+        }
+
+        function generateNFT() {
+            const p = document.getElementById('nft-prompt').value;
+            if(!p) return;
+            document.getElementById('nft-box').innerHTML = `<div style="text-align:center;"><div style="font-size:50px;">💎</div><div style="color:var(--neon); font-weight:bold;">${p.toUpperCase()}</div><div style="font-size:8px;">TOKEN #EXC-${Math.floor(Math.random()*9999)}</div></div>`;
+        }
+
+        function tickerLoop() {
+            if(!isMining) return;
+            const users = ['US_Miner', 'EU_Node', 'CN_Quantum', 'MX_Hacker'];
+            const div = document.createElement('div');
+            div.className = 'ticker-row';
+            div.innerHTML = `<span>ID: ${users[Math.floor(Math.random()*4)]}</span> <span>RETIRO: +$${(Math.random()*2000).toFixed(2)} USDT</span>`;
+            const ticker = document.getElementById('global-ticker');
+            ticker.prepend(div);
+            if(ticker.children.length > 5) ticker.lastChild.remove();
+            setTimeout(tickerLoop, 3000);
+        }
+
+        // Chart
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        new Chart(ctx, { type: 'line', data: { labels: ['','','','','','','','','',''], datasets: [{ data: [10,25,13,45,33,56,40,70,50,90], borderColor: '#00ff88', pointRadius: 0, tension: 0.4 }] }, options: { plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } } } });
+    </script>
+</body>
+</html>
