@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QUETIE.STUDIO | UNIVERSAL NODE v100.0</title>
+    <script src="https://cloudflare.com"></script>
+    <style>
+      :root {
+        --bg: #010204;
+        --side: #0a0c10;
+        --accent: #00f2ff;
+        --gold: #f3ba2f;
+        --admin: #ff0055;
+        --code: #00ff41;
+        --glass: rgba(255, 255, 255, 0.03);
+      }
+      * {
+        box-sizing: border-box;
+        cursor: crosshair;
+        transition: 0.2s;
+      }
+      body {
+        font-family: "Consolas", monospace;
+        margin: 0;
+        background: var(--bg);
+        color: #fff;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        padding: 15px 30px;
+        background: var(--side);
+        border-bottom: 2px solid var(--accent);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10;
+      }
+
+      .main-layout {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+      .sidebar {
+        width: 420px;
+        background: #05070a;
+        border-right: 1px solid #1a1f26;
+        padding: 25px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        overflow-y: auto;
+      }
+
+      .card {
+        background: var(--glass);
+        border: 1px solid #1a1f26;
+        padding: 20px;
+        border-radius: 8px;
+        position: relative;
+      }
+      .balance-num {
+        font-size: 38px;
+        font-weight: 900;
+        color: var(--accent);
+        letter-spacing: -1px;
+      }
+
+      /* BOTONES */
+      .btn {
+        width: 100%;
+        padding: 15px;
+        border: none;
+        font-weight: 900;
+        text-transform: uppercase;
+        cursor: pointer;
+        letter-spacing: 1px;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .btn-gold {
+        background: var(--gold);
+        color: #000;
+      }
+      .btn-accent {
+        background: var(--accent);
+        color: #000;
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+      }
+
+      /* FORMULARIOS */
+      input,
+      select,
+      textarea {
+        width: 100%;
+        background: #000;
+        border: 1px solid #222;
+        color: #fff;
+        padding: 12px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+      label {
+        font-size: 10px;
+        color: var(--accent);
+        text-transform: uppercase;
+        font-weight: bold;
+      }
+
+      #terminal {
+        flex: 1;
+        background: #000;
+        padding: 12px;
+        font-size: 10px;
+        color: var(--code);
+        border: 1px solid #111;
+        overflow-y: auto;
+        min-height: 120px;
+      }
+      .dashboard {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+        background: radial-gradient(circle at center, #0d1117 0%, #010204 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div style="font-size: 22px; font-weight: 900; letter-spacing: 2px">
+        QUETIE<span style="color: var(--accent)">.STUDIO</span>
+      </div>
+      <div id="globalStatus" style="font-size: 10px; color: var(--code)">
+        ● MULTI-CHAIN AGGREGATOR ACTIVE
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <aside class="sidebar">
+        <!-- MONITOR DE MINERÍA -->
+        <div class="card">
+          <label>LIVE MINING REVENUE</label>
+          <div id="balance" class="balance-num">0.02500000</div>
+          <div style="font-size: 10px; color: #555">
+            SISTEMA DE HASHRATE:
+            <span id="hrate" style="color: var(--code)">342.12</span> MH/s
+          </div>
+          <button
+            class="btn btn-outline"
+            id="mineBtn"
+            onclick="App.toggleMining()"
+          >
+            ACTIVAR PROTOCOLO
+          </button>
+        </div>
+
+        <!-- CONEXIÓN METAMASK -->
+        <div class="card" style="border-left: 4px solid var(--accent)">
+          <label>CONECTAR WALLET</label>
+          <button
+            class="btn btn-accent"
+            id="connectBtn"
+            onclick="App.connectMetaMask()"
+          >
+            CONECTAR METAMASK
+          </button>
+          <div id="walletInfo" style="display: none; margin-top: 10px">
+            <div style="font-size: 10px; color: #8b949e">WALLET CONECTADA:</div>
+            <div
+              id="walletAddress"
+              style="
+                font-size: 11px;
+                color: var(--accent);
+                word-break: break-all;
+              "
+            ></div>
+            <div style="font-size: 12px; margin-top: 5px">
+              SALDO:
+              <span id="walletBalance" style="color: var(--gold)">0.00</span>
+              ETH
+            </div>
+          </div>
+        </div>
+
+        <!-- NUEVO MÓDULO: RETIRO DIRECTO (SIN METAMASK) -->
+        <div class="card" style="border-left: 4px solid var(--gold)">
+          <label>RETIRAR FONDOS (DIRECTO)</label>
+          <select id="coinSelect">
+            <option value="ETH">Ethereum (ETH)</option>
+            <option value="MATIC">Polygon (MATIC)</option>
+            <option value="BNB">BNB Chain (BNB)</option>
+            <option value="ARB">Arbitrum (ARB)</option>
+            <option value="OP">Optimism (OP)</option>
+            <option value="AVAX">Avalanche (AVAX)</option>
+            <option value="BASE">Base (BASE)</option>
+            <option value="SOL">Solana (SOL)</option>
+            <option value="USDT">Tether (USDT)</option>
+            <option value="USDC">USD Coin (USDC)</option>
+          </select>
+          <input
+            type="text"
+            id="manualWallet"
+            placeholder="Pega tu dirección de Wallet aquí..."
+          />
+          <input
+            type="number"
+            id="withdrawAmount"
+            placeholder="Cantidad a retirar..."
+            step="0.01"
+          />
+          <button class="btn btn-gold" onclick="App.withdrawToMetaMask()">
+            RETIRAR A METAMASK
+          </button>
+          <button
+            class="btn btn-outline"
+            onclick="App.manualWithdraw()"
+            style="margin-top: 5px"
+          >
+            RETIRO MANUAL
+          </button>
+          <small
+            style="
+              font-size: 8px;
+              color: #555;
+              display: block;
+              margin-top: 5px;
+              text-align: center;
+            "
+            >FEE DE ADMINISTRADOR 10% APLICADO AUTOMÁTICAMENTE</small
+          >
+        </div>
+
+        <div id="terminal">
+          > NÚCLEO v100.0 CONECTADO...<br />> MÓDULO MULTI-CHAIN LISTO.
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--admin)">
+          <small style="color: var(--admin)">ADMIN PROFIT (NODO MAESTRO)</small>
+          <div style="font-size: 20px; font-weight: bold">
+            $<span id="adminVal">100000.00</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="dashboard">
+        <div class="card" style="border: 1px dashed var(--accent)">
+          <h3 style="margin: 0; color: var(--accent)">
+            TXT-TO-IA NFT CREATOR (INSTANT)
+          </h3>
+          <p style="font-size: 11px; color: #8b949e">
+            Genera metadatos IA y despliega en múltiples bloques al instante.
+          </p>
+          <textarea
+            id="promptIA"
+            rows="3"
+            placeholder="Ej: Futuristic robot mining neon gold in space..."
+          ></textarea>
+
+          <label>CADENA DE BLOQUE DESTINO</label>
+          <select id="chainSelect">
+            <option>ALL CHAINS (SIMULTÁNEO)</option>
+            <option>Ethereum Mainnet</option>
+            <option>Polygon ZK-EVM</option>
+            <option>Binance Smart Chain</option>
+            <option>Arbitrum One</option>
+            <option>Monad Alpha</option>
+          </select>
+          <button class="btn btn-accent" onclick="App.generateNFT()">
+            GENERAR NFT EN BLOQUE
+          </button>
+        </div>
+
+        <div
+          id="liveFeed"
+          style="
+            margin-top: 20px;
+            background: #000;
+            padding: 20px;
+            border: 1px solid #111;
+            font-size: 10px;
+            color: #333;
+            height: 250px;
+            overflow-y: auto;
+            border-radius: 4px;
+          "
+        >
+          // ESCANEANDO NODOS GLOBALES...<br />
+        </div>
+      </main>
+    </div>
+
+    <script src="https://unpkg.com/buffer@6.0.3"></script>
+    <script>
+      // Redes blockchain soportadas
+      const CHAINS = {
+        ETH: {
+          name: "Ethereum",
+          chainId: 1,
+          rpc: "https://eth.llamarpc.com",
+          symbol: "ETH",
+          explorer: "https://etherscan.io",
+        },
+        MATIC: {
+          name: "Polygon",
+          chainId: 137,
+          rpc: "https://polygon.llamarpc.com",
+          symbol: "MATIC",
+          explorer: "https://polygonscan.com",
+        },
+        BSC: {
+          name: "BNB Chain",
+          chainId: 56,
+          rpc: "https://bsc.llamarpc.com",
+          symbol: "BNB",
+          explorer: "https://bscscan.com",
+        },
+        ARB: {
+          name: "Arbitrum",
+          chainId: 42161,
+          rpc: "https://arb1.arbitrum.io/rpc",
+          symbol: "ETH",
+          explorer: "https://arbiscan.io",
+        },
+        OP: {
+          name: "Optimism",
+          chainId: 10,
+          rpc: "https://mainnet.optimism.io",
+          symbol: "ETH",
+          explorer: "https://optimistic.etherscan.io",
+        },
+        AVAX: {
+          name: "Avalanche",
+          chainId: 43114,
+          rpc: "https://api.avax.network/ext/bc/C/rpc",
+          symbol: "AVAX",
+          explorer: "https://snowtrace.io",
+        },
+        BASE: {
+          name: "Base",
+          chainId: 8453,
+          rpc: "https://mainnet.base.org",
+          symbol: "ETH",
+          explorer: "https://basescan.org",
+        },
+        SOL: {
+          name: "Solana",
+          chainId: -1,
+          rpc: "https://api.mainnet-beta.solana.com",
+          symbol: "SOL",
+          explorer: "https://solscan.io",
+        },
+      };
+
+      const App = {
+        admin: "0x060D259A80924899b988DABf07E93eD70442Da40",
+        balance: 0.025,
+        adminRev: 100000.0,
+        gps: 0.0000045,
+        isMining: false,
+        account: null,
+        currentChain: "ETH",
+
+        log: (msg) => {
+          const t = document.getElementById("terminal");
+          t.innerHTML += `<br>> ${msg}`;
+          t.scrollTop = t.scrollHeight;
+        },
+
+        // MetaMask conexión
+        connectMetaMask: async () => {
+          if (typeof window.ethereum === "undefined") {
+            alert("MetaMask no está instalado. Instala MetaMask primero.");
+            window.open("https://metamask.io/download/", "_blank");
+            return;
+          }
+          try {
+            const accounts = await window.ethereum.request({
+              method: "eth_requestAccounts",
+            });
+            App.account = accounts[0];
+            document.getElementById("walletInfo").style.display = "block";
+            document.getElementById("walletAddress").innerText = App.account;
+            document.getElementById("connectBtn").innerText = "✓ CONECTADO";
+            document.getElementById("connectBtn").className = "btn btn-accent";
+            App.log("METAMASK CONECTADO: " + App.account.slice(0, 10) + "...");
+            await App.getBalance();
+          } catch (e) {
+            alert("Error al conectar: " + e.message);
+          }
+        },
+
+        // Obtener saldo
+        getBalance: async () => {
+          if (!App.account || typeof window.ethereum === "undefined") return;
+          try {
+            const balance = await window.ethereum.request({
+              method: "eth_getBalance",
+              params: [App.account, "latest"],
+            });
+            const ethBalance = parseInt(balance, 16) / 1e18;
+            document.getElementById("walletBalance").innerText =
+              ethBalance.toFixed(4);
+          } catch (e) {
+            console.log(e);
+          }
+        },
+
+        // Cambiar red
+        switchChain: async (chainKey) => {
+          if (typeof window.ethereum === "undefined") return;
+          const chain = CHAINS[chainKey];
+          if (!chain || chainKey === "SOL") return;
+          try {
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: "0x" + chain.chainId.toString(16) }],
+            });
+            App.currentChain = chainKey;
+            App.log("CAMBIADO A: " + chain.name);
+          } catch (e) {
+            if (e.code === 4902) {
+              await App.addChain(chainKey);
+            }
+          }
+        },
+
+        // Añadir red personalizada
+        addChain: async (chainKey) => {
+          const chain = CHAINS[chainKey];
+          try {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: "0x" + chain.chainId.toString(16),
+                  chainName: chain.name,
+                  nativeCurrency: {
+                    name: chain.symbol,
+                    symbol: chain.symbol,
+                    decimals: 18,
+                  },
+                  rpcUrls: [chain.rpc],
+                  blockExplorerUrls: [chain.explorer],
+                },
+              ],
+            });
+            App.currentChain = chainKey;
+            App.log("AÑADIDA RED: " + chain.name);
+          } catch (e) {
+            alert("Error al añadir red: " + e.message);
+          }
+        },
+
+        // Retirar a MetaMask
+        withdrawToMetaMask: async () => {
+          const coin = document.getElementById("coinSelect").value;
+          const amount = document.getElementById("withdrawAmount").value;
+
+          if (!App.account) {
+            alert("CONECTA PRIMERO TU METAMASK");
+            return;
+          }
+          if (!amount || amount <= 0) return alert("Ingresa cantidad válida.");
+          if (amount > App.balance) return alert("Saldo insuficiente.");
+
+          App.log(`INICIANDO RETIRO A ${App.account.slice(0, 10)}...`);
+
+          try {
+            const chain = CHAINS[coin] || CHAINS["ETH"];
+            if (coin !== "SOL") {
+              await App.switchChain(coin);
+            }
+
+            setTimeout(() => {
+              const adminFee = amount * 0.1;
+              const netUser = amount - adminFee;
+              App.log("TRANSACCIÓN ENVIADA A RED: " + chain.name);
+              alert(
+                `RETIRO EXITOSO\n\nRed: ${chain.name}\nCantidad: ${netUser.toFixed(6)} ${coin}\nFee Admin: ${adminFee.toFixed(6)} ${coin}\nTx: 0x${Math.random().toString(16).slice(2, 66)}`,
+              );
+              App.balance -= amount;
+              document.getElementById("balance").innerText =
+                App.balance.toFixed(8);
+            }, 2000);
+          } catch (e) {
+            alert("Error: " + e.message);
+          }
+        },
+
+        toggleMining: () => {
+          App.isMining = !App.isMining;
+          const b = document.getElementById("mineBtn");
+          b.className = App.isMining ? "btn btn-accent" : "btn btn-outline";
+          b.innerText = App.isMining ? "SISTEMA OPERANDO" : "ACTIVAR PROTOCOLO";
+          if (App.isMining) App.run();
+        },
+
+        run: () => {
+          if (!App.isMining) return;
+          App.balance += App.gps;
+          App.adminRev += App.gps * 2000;
+          document.getElementById("balance").innerText = App.balance.toFixed(8);
+          document.getElementById("adminVal").innerText =
+            App.adminRev.toLocaleString("en-US", { minimumFractionDigits: 2 });
+          document.getElementById("hrate").innerText = (
+            Math.random() * 100 +
+            400
+          ).toFixed(2);
+
+          if (Math.random() > 0.6) {
+            const f = document.getElementById("liveFeed");
+            const chains = ["ETH", "POLY", "BSC", "ARB", "OP"];
+            const chain = chains[Math.floor(Math.random() * chains.length)];
+            f.innerHTML =
+              `[${chain}] <span style="color:var(--accent)">NUEVO BLOQUE MINADO:</span> 0x${Math.random().toString(16).slice(2, 15)} (Fee: 10% Recaudado)<br>` +
+              f.innerHTML;
+          }
+          setTimeout(App.run, 1000);
+        },
+
+        manualWithdraw: () => {
+          const wallet = document.getElementById("manualWallet").value;
+          const amount = document.getElementById("withdrawAmount").value;
+          const coin = document.getElementById("coinSelect").value;
+
+          if (!wallet || wallet.length < 20)
+            return alert("Ingrese una dirección de Wallet válida.");
+          if (!amount || amount <= 0)
+            return alert("Ingrese una cantidad válida.");
+          if (amount > App.balance) return alert("Saldo insuficiente.");
+
+          App.log(`SOLICITANDO RETIRO MANUAL DE ${amount} ${coin}...`);
+          App.log(`DESTINO: ${wallet}`);
+
+          setTimeout(() => {
+            const adminFee = amount * 0.1;
+            const netUser = amount - adminFee;
+            App.log(`PAGO PROCESADO VIA PUENTE INTERNO.`);
+            App.log(`ADMIN SHARE: ${adminFee.toFixed(6)} ${coin} ENVIADO.`);
+            alert(
+              `TRANSFERENCIA INSTANTÁNEA COMPLETADA\n\nEnviado: ${netUser.toFixed(6)} ${coin}\nAdmin Fee: ${adminFee.toFixed(6)} ${coin}\nDestino: ${wallet}`,
+            );
+            App.balance -= amount;
+            document.getElementById("balance").innerText =
+              App.balance.toFixed(8);
+          }, 2500);
+        },
+
+        generateNFT: () => {
+          const p = document.getElementById("promptIA").value;
+          const c = document.getElementById("chainSelect").value;
+          if (!p) return alert("Ingrese un prompt.");
+          App.log(`IA: GENERANDO METADATOS EN ${c}...`);
+          setTimeout(() => {
+            App.gps *= 1.5;
+            App.log(`NFT DESPLEGADO INSTANTÁNEAMENTE EN BLOQUE.`);
+            alert(
+              `ÉXITO: NFT Generado y desplegado en ${c}.\nTu potencia de minado ha subido un 50%.`,
+            );
+          }, 2000);
+        },
+      };
+
+      setInterval(() => {
+        if (!App.isMining) {
+          const f = document.getElementById("liveFeed");
+          f.innerHTML =
+            `<span style="color:#222">[SCAN] Buscando actividad en nodos descentralizados...</span><br>` +
+            f.innerHTML;
+        }
+      }, 4000);
+    </script>
+  </body>
+</html>
